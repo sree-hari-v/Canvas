@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CanvasLite — Online Infinite Whiteboard & Canvas</title>
+  
+  <!-- Online Favicons -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%236366f1'/><path d='M30 70 L70 30 M60 30 L70 30 L70 40' stroke='%23ffffff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><circle cx='35' cy='35' r='10' fill='%2338bdf8'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="https://fav.farm/🎨">
+  <link rel="icon" type="image/svg+xml" href="https://api.iconify.design/lucide:palette.svg?color=%236366f1">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1043/1043372.png">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&family=Georgia&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Fabric.js Library with EraserBrush -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 overflow-hidden font-sans">
+
+  <!-- Main Canvas Container -->
+  <div id="canvas-container">
+    <canvas id="main-canvas"></canvas>
+  </div>
+
+  <!-- TOP HEADER BAR -->
+  <header class="absolute top-4 left-4 right-4 h-14 z-20 flex items-center justify-between px-4 glass-panel shadow-2xl">
+    
+    <!-- Left: App Brand, Board Selector, & Quick Add Board -->
+    <div class="flex items-center gap-3">
+      <!-- CanvasLite Brand Logo -->
+      <div class="flex items-center gap-2 pr-3 border-r border-slate-700/60">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-black">
+          <i class="fa-solid fa-palette text-sm"></i>
+        </div>
+        <span class="font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 text-base">CanvasLite</span>
+      </div>
+
+      <button id="btn-toggle-drawer" class="p-2 rounded-lg hover:bg-slate-700/50 text-indigo-400 hover:text-indigo-300 transition-all flex items-center gap-2" data-tooltip="Open Saved Boards Drawer">
+        <i class="fa-solid fa-layer-group text-lg"></i>
+        <span class="text-xs font-semibold uppercase tracking-wider hidden sm:inline">Boards</span>
+      </button>
+
+      <!-- Quick "+ Board" Button -->
+      <button id="btn-header-add-board" class="px-2.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 text-xs font-medium border border-indigo-500/30 flex items-center gap-1.5 transition-all" data-tooltip="Create New Canvas Board">
+        <i class="fa-solid fa-plus"></i>
+        <span class="hidden md:inline">+ Board</span>
+      </button>
+
+      <div class="h-5 w-[1px] bg-slate-700/60"></div>
+
+      <!-- Active Board Name & Edit -->
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square text-slate-400 text-xs"></i>
+        <input type="text" id="board-title-input" value="Untitled Whiteboard" class="bg-transparent font-medium text-slate-100 text-sm focus:outline-none focus:bg-slate-800/60 px-2 py-1 rounded border border-transparent focus:border-indigo-500/50 w-40 sm:w-60 transition-all">
+      </div>
+    </div>
+
+    <!-- Right: Quick Actions, Theme, Fullscreen & File Menu -->
+    <div class="flex items-center gap-2">
+      <!-- File Dropdown -->
+      <div class="relative inline-block text-left">
+        <button id="btn-file-menu" class="px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-xs font-medium border border-slate-700/50 flex items-center gap-2 transition-all">
+          <i class="fa-solid fa-folder-open text-indigo-400"></i>
+          <span>File</span>
+          <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+        </button>
+
+        <div id="file-menu-dropdown" class="hidden absolute left-0 mt-2 w-48 glass-panel py-1 shadow-2xl z-50 border border-slate-700/60">
+          <button id="btn-menu-new" class="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-indigo-400 w-4"></i> New Board
+          </button>
+          <button id="btn-menu-open-file" class="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-folder-open text-amber-400 w-4"></i> Open Local File...
+          </button>
+          <div class="my-1 border-t border-slate-700/50"></div>
+          <button id="btn-menu-export-json" class="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-file-export text-emerald-400 w-4"></i> Export as JSON
+          </button>
+          <button id="btn-menu-export-png" class="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-file-image text-cyan-400 w-4"></i> Export as PNG
+          </button>
+        </div>
+      </div>
+
+      <!-- Light / Dark Theme Switcher Button -->
+      <button id="btn-toggle-theme" class="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-amber-400 border border-slate-700/50 transition-all" data-tooltip="Toggle Light / Dark Mode">
+        <i class="fa-solid fa-sun text-sm" id="theme-icon"></i>
+      </button>
+
+      <!-- Fullscreen Mode Button -->
+      <button id="btn-toggle-fullscreen" class="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 border border-slate-700/50 transition-all" data-tooltip="Toggle Fullscreen">
+        <i class="fa-solid fa-expand text-sm" id="fullscreen-icon"></i>
+      </button>
+
+      <!-- Save Status Badge & Save Button -->
+      <div id="save-status-badge" class="save-badge saved hidden sm:inline-flex">
+        <i class="fa-solid fa-circle-check text-[10px]"></i>
+        <span>Saved</span>
+      </div>
+
+      <button id="btn-manual-save" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 transition-all" data-tooltip="Save to Database">
+        <i class="fa-solid fa-floppy-disk text-xs"></i>
+        <span>Save</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MULTI-CANVAS TABS BAR (Under Header) -->
+  <div id="canvas-tabs-bar">
+    <!-- Rendered dynamically via JavaScript -->
+  </div>
+
+  <!-- FLOATING MAIN TOOLBAR (Bottom Center) -->
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 p-2 glass-panel shadow-2xl">
+    
+    <!-- Undo / Redo Buttons -->
+    <button id="tool-undo" class="tool-btn" data-tooltip="Undo (Ctrl+Z)">
+      <i class="fa-solid fa-rotate-left"></i>
+    </button>
+    <button id="tool-redo" class="tool-btn" data-tooltip="Redo (Ctrl+Y)">
+      <i class="fa-solid fa-rotate-right"></i>
+    </button>
+
+    <div class="h-6 w-[1px] bg-slate-700/60 mx-1"></div>
+
+    <!-- Select / Move -->
+    <button id="tool-select" class="tool-btn active" data-tooltip="Select & Move (V)">
+      <i class="fa-solid fa-arrow-pointer"></i>
+    </button>
+
+    <!-- Multi-Select Tool -->
+    <button id="tool-multiselect" class="tool-btn" data-tooltip="Multi-Select Box (M / Shift+Click)">
+      <i class="fa-solid fa-object-group"></i>
+    </button>
+
+    <!-- Pan Hand Tool -->
+    <button id="tool-pan" class="tool-btn" data-tooltip="Pan Canvas (H / Hold Space)">
+      <i class="fa-solid fa-hand"></i>
+    </button>
+
+    <div class="h-6 w-[1px] bg-slate-700/60 mx-1"></div>
+
+    <!-- Whiteboard Frame Tool ("Board") -->
+    <button id="tool-whiteboard-frame" class="tool-btn" data-tooltip="Whiteboard Frame (B / Draw & Write Sub-board)">
+      <i class="fa-solid fa-chalkboard text-emerald-400"></i>
+    </button>
+
+    <!-- Sticky Note Tool -->
+    <button id="tool-sticky" class="tool-btn" data-tooltip="Sticky Note (N)">
+      <i class="fa-solid fa-sticky-note text-amber-300"></i>
+    </button>
+
+    <!-- Text Box Tool (Type from Keyboard) -->
+    <button id="tool-text" class="tool-btn" data-tooltip="Keyboard Text Box (T)">
+      <i class="fa-solid fa-font text-cyan-300"></i>
+    </button>
+
+    <div class="h-6 w-[1px] bg-slate-700/60 mx-1"></div>
+
+    <!-- Pen / Freehand Drawing Tool -->
+    <button id="tool-pen" class="tool-btn" data-tooltip="Pen Draw (P)">
+      <i class="fa-solid fa-pen-nib"></i>
+    </button>
+
+    <!-- Highlighter Tool -->
+    <button id="tool-highlighter" class="tool-btn" data-tooltip="Highlighter">
+      <i class="fa-solid fa-highlighter text-yellow-400"></i>
+    </button>
+
+    <!-- Dual Eraser Dropdown Button -->
+    <div class="relative inline-block">
+      <button id="btn-eraser-dropdown" class="tool-btn" data-tooltip="Eraser Tools (Whole Line vs Partial Rub)">
+        <i class="fa-solid fa-eraser text-rose-400" id="eraser-active-icon"></i>
+      </button>
+
+      <div id="eraser-menu" class="hidden absolute bottom-14 left-1/2 -translate-x-1/2 glass-panel p-2 flex flex-col gap-1 shadow-2xl border border-slate-700/60 w-52 text-xs">
+        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">Eraser Types</div>
+        <button id="eraser-stroke" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-left text-slate-200 transition-all">
+          <i class="fa-solid fa-vector-square text-rose-400"></i>
+          <div>
+            <div class="font-semibold text-xs">Stroke Eraser</div>
+            <div class="text-[10px] text-slate-400">Deletes whole line/object</div>
+          </div>
+        </button>
+        <button id="eraser-partial" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-left text-slate-200 transition-all">
+          <i class="fa-solid fa-broom text-amber-400"></i>
+          <div>
+            <div class="font-semibold text-xs">Partial Eraser</div>
+            <div class="text-[10px] text-slate-400">Rubs off specific area</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <div class="h-6 w-[1px] bg-slate-700/60 mx-1"></div>
+
+    <!-- Expanded Shapes Dropdown Button -->
+    <div class="relative inline-block">
+      <button id="btn-shapes-dropdown" class="tool-btn" data-tooltip="Shapes Catalog">
+        <i class="fa-solid fa-shapes"></i>
+      </button>
+
+      <div id="shapes-menu" class="hidden absolute bottom-14 left-1/2 -translate-x-1/2 glass-panel p-3 shadow-2xl border border-slate-700/60 w-64">
+        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Basic & Geometric Shapes</div>
+        <div class="grid grid-cols-4 gap-2">
+          <button id="shape-rect" class="tool-btn" data-tooltip="Rectangle"><i class="fa-regular fa-square"></i></button>
+          <button id="shape-rounded-rect" class="tool-btn" data-tooltip="Rounded Rect"><i class="fa-solid fa-square-envelope"></i></button>
+          <button id="shape-circle" class="tool-btn" data-tooltip="Circle"><i class="fa-regular fa-circle"></i></button>
+          <button id="shape-triangle" class="tool-btn" data-tooltip="Triangle"><i class="fa-solid fa-play -rotate-90"></i></button>
+          
+          <button id="shape-star" class="tool-btn" data-tooltip="Star"><i class="fa-regular fa-star"></i></button>
+          <button id="shape-hexagon" class="tool-btn" data-tooltip="Hexagon"><i class="fa-solid fa-vector-square"></i></button>
+          <button id="shape-diamond" class="tool-btn" data-tooltip="Diamond"><i class="fa-solid fa-gem"></i></button>
+          <button id="shape-heart" class="tool-btn" data-tooltip="Heart"><i class="fa-regular fa-heart"></i></button>
+          
+          <button id="shape-callout" class="tool-btn" data-tooltip="Speech Bubble"><i class="fa-regular fa-comment"></i></button>
+          <button id="shape-line" class="tool-btn" data-tooltip="Straight Line"><i class="fa-solid fa-minus"></i></button>
+          <button id="shape-arrow" class="tool-btn" data-tooltip="Single Arrow"><i class="fa-solid fa-arrow-right-long"></i></button>
+          <button id="shape-double-arrow" class="tool-btn" data-tooltip="Double Arrow"><i class="fa-solid fa-left-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="h-6 w-[1px] bg-slate-700/60 mx-1"></div>
+
+    <!-- Clear All -->
+    <button id="btn-clear-canvas" class="tool-btn hover:text-red-400" data-tooltip="Clear Canvas">
+      <i class="fa-solid fa-trash-can"></i>
+    </button>
+  </div>
+
+  <!-- CONTEXTUAL INSPECTOR BAR (Top Floating under Header when element selected) -->
+  <div id="inspector-bar" class="hidden absolute top-28 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-4 py-2 glass-panel shadow-2xl text-xs">
+    
+    <!-- Multi-Select Status Indicator -->
+    <div id="multi-select-indicator" class="hidden text-indigo-400 font-semibold flex items-center gap-1.5">
+      <i class="fa-solid fa-object-group"></i>
+      <span id="multi-select-count">0 items selected</span>
+    </div>
+
+    <!-- Color Swatches -->
+    <div class="flex items-center gap-1.5" id="color-picker-container">
+      <span class="text-slate-400 font-medium mr-1">Color:</span>
+      <div class="color-swatch active bg-amber-200" data-color="#fef08a"></div>
+      <div class="color-swatch bg-emerald-200" data-color="#bbf7d0"></div>
+      <div class="color-swatch bg-sky-200" data-color="#bae6fd"></div>
+      <div class="color-swatch bg-rose-200" data-color="#fecdd3"></div>
+      <div class="color-swatch bg-purple-200" data-color="#e9d5ff"></div>
+      <div class="color-swatch bg-slate-800 border border-slate-600" data-color="#1e293b"></div>
+      <input type="color" id="custom-color-picker" class="w-6 h-6 rounded-full cursor-pointer bg-transparent border-0 p-0" title="Custom color">
+    </div>
+
+    <div class="h-4 w-[1px] bg-slate-700"></div>
+
+    <!-- Stroke Width / Brush / Eraser Size -->
+    <div class="flex items-center gap-2" id="stroke-width-container">
+      <span class="text-slate-400 font-medium" id="size-label">Size:</span>
+      <input type="range" id="input-stroke-width" min="1" max="60" value="6" class="w-20 accent-indigo-500 cursor-pointer">
+      <span id="stroke-width-val" class="font-mono text-slate-300 w-4">6</span>
+    </div>
+
+    <div class="h-4 w-[1px] bg-slate-700"></div>
+
+    <!-- Text Formatting Options (Shown when Textbox selected) -->
+    <div id="text-formatting-controls" class="hidden flex items-center gap-1.5">
+      <select id="select-font-family" class="bg-slate-800 text-slate-200 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none">
+        <option value="Inter, sans-serif">Inter</option>
+        <option value="Roboto, sans-serif">Roboto</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="JetBrains Mono, monospace">Monospace</option>
+      </select>
+      <button id="btn-text-bold" class="p-1.5 rounded hover:bg-slate-700/60 font-bold" data-tooltip="Bold"><i class="fa-solid fa-bold"></i></button>
+      <button id="btn-text-italic" class="p-1.5 rounded hover:bg-slate-700/60 italic" data-tooltip="Italic"><i class="fa-solid fa-italic"></i></button>
+      <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+    </div>
+
+    <!-- Multi-select Group/Ungroup Controls -->
+    <div id="multi-select-actions" class="hidden items-center gap-1">
+      <button id="btn-group" class="p-1.5 rounded hover:bg-slate-700/60 text-indigo-400" data-tooltip="Group Objects (Ctrl+G)"><i class="fa-solid fa-cubes"></i></button>
+      <button id="btn-ungroup" class="p-1.5 rounded hover:bg-slate-700/60 text-indigo-400" data-tooltip="Ungroup Objects (Ctrl+Shift+G)"><i class="fa-solid fa-cube"></i></button>
+      <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+    </div>
+
+    <!-- Z-Index & Actions -->
+    <div class="flex items-center gap-1">
+      <button id="btn-bring-forward" class="p-1.5 rounded hover:bg-slate-700/60 text-slate-300" data-tooltip="Bring Forward"><i class="fa-solid fa-layer-group"></i></button>
+      <button id="btn-send-backward" class="p-1.5 rounded hover:bg-slate-700/60 text-slate-300" data-tooltip="Send Backward"><i class="fa-solid fa-layer-group fa-flip-vertical"></i></button>
+      <button id="btn-duplicate" class="p-1.5 rounded hover:bg-slate-700/60 text-indigo-400" data-tooltip="Duplicate Object"><i class="fa-solid fa-clone"></i></button>
+      <button id="btn-delete-selected" class="p-1.5 rounded hover:bg-red-500/20 text-red-400" data-tooltip="Delete Element (Delete / Backspace)"><i class="fa-solid fa-trash"></i></button>
+    </div>
+  </div>
+
+  <!-- ZOOM CONTROLS (Bottom Right) -->
+  <div class="absolute bottom-6 right-6 z-20 flex items-center gap-1.5 p-1.5 glass-panel shadow-2xl text-xs">
+    <button id="btn-zoom-out" class="p-2 rounded-lg hover:bg-slate-800 text-slate-300" data-tooltip="Zoom Out (-)">
+      <i class="fa-solid fa-minus"></i>
+    </button>
+
+    <button id="btn-zoom-reset" class="px-2 py-1 font-mono font-medium text-slate-200 hover:bg-slate-800 rounded text-xs" data-tooltip="Reset 100%">
+      <span id="zoom-percentage">100%</span>
+    </button>
+
+    <button id="btn-zoom-in" class="p-2 rounded-lg hover:bg-slate-800 text-slate-300" data-tooltip="Zoom In (+)">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <div class="h-4 w-[1px] bg-slate-700 mx-1"></div>
+
+    <button id="btn-fit-content" class="p-2 rounded-lg hover:bg-slate-800 text-indigo-400" data-tooltip="Fit to Content">
+      <i class="fa-solid fa-expand"></i>
+    </button>
+  </div>
+
+  <!-- BOARD FILE MANAGER DRAWER (Left Sliding Panel) -->
+  <div id="board-drawer" class="absolute top-0 left-0 w-80 h-full z-40 glass-panel border-r border-slate-700/60 p-5 drawer-enter shadow-2xl flex flex-col justify-between">
+    
+    <div>
+      <!-- Drawer Header -->
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-700/60">
+        <div class="flex items-center gap-2 text-indigo-400 font-bold text-base">
+          <i class="fa-solid fa-folder-tree"></i>
+          <span>My Canvas Boards</span>
+        </div>
+        <button id="btn-close-drawer" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-2 mb-4">
+        <button id="btn-drawer-new" class="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all">
+          <i class="fa-solid fa-plus"></i> New Board
+        </button>
+        <button id="btn-drawer-import" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all">
+          <i class="fa-solid fa-upload text-amber-400"></i> Open File
+        </button>
+      </div>
+
+      <!-- Saved Boards List -->
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Saved in SQLite</div>
+      <div id="boards-list-container" class="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+        <!-- Board Items rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="pt-4 border-t border-slate-700/60 text-center text-xs text-slate-500 font-medium">
+      CanvasLite &bull; Whiteboard & Infinite Canvas
+    </div>
+  </div>
+
+  <!-- Hidden File Input for Opening Local Files -->
+  <input type="file" id="local-file-input" accept=".json" class="hidden">
+
+  <!-- Custom JavaScript -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
